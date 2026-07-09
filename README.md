@@ -2,7 +2,7 @@
 
 Despliegue conjunto de [**gastos-python**](https://github.com/fsalom/gastos-python),
 [**python-microworkout**](https://github.com/fsalom/python-microworkout) y el SSO
-[**nexus-auth**](https://github.com/fsalom/nexus-ldap) en un solo host, detrás de
+[**nexus-auth**](https://github.com/fsalom/nexus-auth) en un solo host, detrás de
 **Caddy** (HTTPS automático, enrutado por subdominio y **login único vía forward-auth**).
 
 ```
@@ -25,7 +25,7 @@ te manda al login de `auth.DOMINIO`; si la hay, deja pasar. gastos ya no tiene c
   git clone https://github.com/fsalom/nexus-infra.git
   git clone https://github.com/fsalom/gastos-python.git
   git clone https://github.com/fsalom/python-microworkout.git
-  git clone https://github.com/fsalom/nexus-ldap.git nexus-auth   # SSO
+  git clone https://github.com/fsalom/nexus-auth.git   # SSO
   ```
 - DNS: `auth.DOMINIO`, `gastos.DOMINIO` y `workout.DOMINIO` con registro **A/AAAA** apuntando al host.
 
