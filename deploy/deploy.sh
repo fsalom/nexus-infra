@@ -16,6 +16,17 @@ for r in $REPOS; do
   fi
 done
 
+# .env desde los secrets (si la pipeline los pasa por entorno); si no, se usa
+# el .env que ya exista en el servidor (creado a mano).
+if [ -n "${INFRA_ENV:-}" ]; then
+  printf '%s\n' "$INFRA_ENV" > "$BASE/nexus-infra/.env"
+  echo "== escrito nexus-infra/.env desde secret =="
+fi
+if [ -n "${MICROWORKOUT_ENV:-}" ]; then
+  printf '%s\n' "$MICROWORKOUT_ENV" > "$BASE/python-microworkout/.env"
+  echo "== escrito python-microworkout/.env desde secret =="
+fi
+
 cd "$BASE/nexus-infra"
 docker compose up -d --build
 

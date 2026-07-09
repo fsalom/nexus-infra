@@ -18,13 +18,15 @@ jobs:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}   # opcional: token read-only para repos privados
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}            # token read-only para repos privados
+          INFRA_ENV: ${{ secrets.INFRA_ENV }}          # contenido completo de nexus-infra/.env
+          MICROWORKOUT_ENV: ${{ secrets.MICROWORKOUT_ENV }}  # contenido completo de python-microworkout/.env
         with:
           host: ${{ secrets.SSH_HOST || '161.35.215.164' }}
           username: ${{ secrets.SSH_USER || 'root' }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || '22' }}
-          envs: GH_TOKEN
+          envs: GH_TOKEN,INFRA_ENV,MICROWORKOUT_ENV
           script: |
             set -e
             # con token -> repos privados; sin token -> públicos

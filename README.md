@@ -68,13 +68,19 @@ Secrets del repo (*Settings → Secrets and variables → Actions*):
 | `SSH_HOST` | no | `161.35.215.164` |
 | `SSH_USER` | no | `root` |
 | `SSH_PORT` | no | `22` |
-| `GH_TOKEN` | no | — (solo si los repos son **privados**: PAT *fine-grained* con `Contents: read`) |
+| `GH_TOKEN` | repos privados | — (PAT *fine-grained* con `Contents: read` a los 4 repos) |
+| `INFRA_ENV` | recomendado | contenido **completo** de `nexus-infra/.env` |
+| `MICROWORKOUT_ENV` | recomendado | contenido **completo** de `python-microworkout/.env` |
+
+Con `INFRA_ENV`/`MICROWORKOUT_ENV` puestos, la pipeline **crea los `.env` en el servidor** y el
+despliegue es 100% desde GitHub. Si no los pones, deja los `.env` creados a mano en el servidor
+(la pipeline los respeta).
 
 Preparar el servidor **una vez**:
-1. Docker y Docker Compose instalados; tu clave **pública** en `~/.ssh/authorized_keys`.
-   (instalar Docker: `curl -fsSL https://get.docker.com | sh`)
-2. Los repos se clonan solos en `~/nexus`. Si son **privados**, añade el secret `GH_TOKEN`
-   (token *fine-grained* de solo lectura) y la pipeline los clona con él.
+1. Docker y Docker Compose instalados (`curl -fsSL https://get.docker.com | sh`); tu clave
+   **pública** en `~/.ssh/authorized_keys`.
+2. Nada más: los repos se clonan solos en `~/nexus` (con `GH_TOKEN` si son privados) y los
+   `.env` se materializan desde los secrets.
 3. Crea los `.env` (no van en git): `~/nexus/nexus-infra/.env` y `~/nexus/python-microworkout/.env`.
 4. DNS de `auth`/`gastos`/`workout.DOMINIO` → `161.35.215.164`.
 
