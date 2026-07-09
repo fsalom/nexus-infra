@@ -33,6 +33,10 @@ write_env "$BASE/python-microworkout/.env" "${MICROWORKOUT_VARS:-}" "${MICROWORK
 cd "$BASE/nexus-infra"
 docker compose up -d --build
 
+# el Caddyfile va bind-mounted: compose no ve sus cambios, así que se recarga
+docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile 2>/dev/null \
+  || docker compose restart caddy || true
+
 # microworkout: migraciones y estáticos (idempotente).
 # collectstatic va como root: el volumen workout_static (vacío) es de root y el
 # usuario de la app no puede escribir; los ficheros luego solo se leen (Caddy los sirve).

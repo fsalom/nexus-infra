@@ -34,27 +34,35 @@ gastos.{$DOMAIN} {
 # forward-auth primero (gatea todo) y luego el mismo reparto que su nginx.
 workout.{$DOMAIN} {
 	encode zstd gzip
-	route {
-		forward_auth auth:8000 {
-			uri /verify
-			copy_headers Remote-User Remote-Groups Remote-Admin
-		}
-		handle_path /static/* {
-			root * /srv/workout/static
-			file_server
-		}
-		handle_path /media/* {
-			root * /srv/workout/media
-			file_server
-		}
-		handle /admin/* {
+
+	handle_path /static/* {
+		root * /srv/workout/static
+		file_server
+	}
+	handle_path /media/* {
+		root * /srv/workout/media
+		file_server
+	}
+
+	# Panel de administración de Django: protegido por el SSO (superficie humana).
+	@admin path /admin /admin/*
+	handle @admin {
+		route {
+			forward_auth auth:8000 {
+				uri /verify
+				copy_headers Remote-User Remote-Groups Remote-Admin
+			}
 			reverse_proxy workout-admin:8000
 		}
-		handle /o/* {
-			reverse_proxy workout-admin:8000
-		}
-		handle {
-			reverse_proxy workout-api:8000
-		}
+	}
+
+	# OAuth2 (emisión de tokens): SIN SSO — los clientes obtienen aquí sus tokens.
+	handle /o/* {
+		reverse_proxy workout-admin:8000
+	}
+
+	# API y el resto -> FastAPI, con su propia auth por token: SIN SSO.
+	handle {
+		reverse_proxy workout-api:8000
 	}
 }
