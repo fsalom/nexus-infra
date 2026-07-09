@@ -17,19 +17,28 @@ jobs:
     steps:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}   # opcional: token read-only para repos privados
         with:
           host: ${{ secrets.SSH_HOST || '161.35.215.164' }}
           username: ${{ secrets.SSH_USER || 'root' }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || '22' }}
+          envs: GH_TOKEN
           script: |
             set -e
+            # con token -> repos privados; sin token -> públicos
+            if [ -n "${GH_TOKEN:-}" ]; then
+              export GIT_BASE="https://x-access-token:${GH_TOKEN}@github.com/fsalom"
+            else
+              export GIT_BASE="https://github.com/fsalom"
+            fi
             BASE="${NEXUS_DIR:-$HOME/nexus}"
             # asegura que nexus-infra está presente, luego delega en su deploy.sh
             if [ -d "$BASE/nexus-infra/.git" ]; then
               git -C "$BASE/nexus-infra" pull --ff-only
             else
               mkdir -p "$BASE"
-              git clone https://github.com/fsalom/nexus-infra.git "$BASE/nexus-infra"
+              git clone "$GIT_BASE/nexus-infra.git" "$BASE/nexus-infra"
             fi
             bash "$BASE/nexus-infra/deploy/deploy.sh"

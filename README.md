@@ -68,11 +68,13 @@ Secrets del repo (*Settings → Secrets and variables → Actions*):
 | `SSH_HOST` | no | `161.35.215.164` |
 | `SSH_USER` | no | `root` |
 | `SSH_PORT` | no | `22` |
+| `GH_TOKEN` | no | — (solo si los repos son **privados**: PAT *fine-grained* con `Contents: read`) |
 
 Preparar el servidor **una vez**:
 1. Docker y Docker Compose instalados; tu clave **pública** en `~/.ssh/authorized_keys`.
-2. Los repos se clonan solos en `~/nexus` (si son **privados**, edita `GIT_BASE` en `deploy/deploy.sh`
-   para usar un token, p. ej. `https://TOKEN@github.com/fsalom`).
+   (instalar Docker: `curl -fsSL https://get.docker.com | sh`)
+2. Los repos se clonan solos en `~/nexus`. Si son **privados**, añade el secret `GH_TOKEN`
+   (token *fine-grained* de solo lectura) y la pipeline los clona con él.
 3. Crea los `.env` (no van en git): `~/nexus/nexus-infra/.env` y `~/nexus/python-microworkout/.env`.
 4. DNS de `auth`/`gastos`/`workout.DOMINIO` → `161.35.215.164`.
 
