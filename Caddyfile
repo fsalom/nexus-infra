@@ -1,36 +1,60 @@
-# TLS automático (Let's Encrypt) + enrutado por subdominio.
-# Los dominios gastos.$DOMAIN y workout.$DOMAIN deben apuntar (A/AAAA) a este host.
+# TLS automático (Let's Encrypt) + enrutado por subdominio + SSO (forward-auth).
+# Los dominios auth/gastos/workout.$DOMAIN deben apuntar (A/AAAA) a este host.
 {
 	email {$ACME_EMAIL}
+}
+
+# ---- SSO (nexus-auth): login, portal, admin, /verify ----
+auth.{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy auth:8000
 }
 
 # ---- gastos ----
 gastos.{$DOMAIN} {
 	encode zstd gzip
-	reverse_proxy gastos:8000
+
+	# el cron va protegido por token (lo llama el crontab del host), sin SSO
+	@cron path /api/cron/daily
+	route @cron {
+		reverse_proxy gastos:8000
+	}
+
+	# el resto exige sesión del SSO
+	route {
+		forward_auth auth:8000 {
+			uri /verify
+			copy_headers Remote-User Remote-Groups Remote-Admin
+		}
+		reverse_proxy gastos:8000
+	}
 }
 
 # ---- microworkout ----
-# Mismo enrutado que su nginx: /admin y /o -> Django; /static y /media -> ficheros;
-# el resto (/, /api, /health, /docs…) -> FastAPI.
+# forward-auth primero (gatea todo) y luego el mismo reparto que su nginx.
 workout.{$DOMAIN} {
 	encode zstd gzip
-
-	handle_path /static/* {
-		root * /srv/workout/static
-		file_server
-	}
-	handle_path /media/* {
-		root * /srv/workout/media
-		file_server
-	}
-	handle /admin/* {
-		reverse_proxy workout-admin:8000
-	}
-	handle /o/* {
-		reverse_proxy workout-admin:8000
-	}
-	handle {
-		reverse_proxy workout-api:8000
+	route {
+		forward_auth auth:8000 {
+			uri /verify
+			copy_headers Remote-User Remote-Groups Remote-Admin
+		}
+		handle_path /static/* {
+			root * /srv/workout/static
+			file_server
+		}
+		handle_path /media/* {
+			root * /srv/workout/media
+			file_server
+		}
+		handle /admin/* {
+			reverse_proxy workout-admin:8000
+		}
+		handle /o/* {
+			reverse_proxy workout-admin:8000
+		}
+		handle {
+			reverse_proxy workout-api:8000
+		}
 	}
 }

@@ -11,6 +11,7 @@ networks:
 volumes:
   caddy_data:
   caddy_config:
+  auth_data:
   gastos_data:
   workout_pgdata:
   workout_media:
@@ -38,19 +39,35 @@ services:
       - workout_static:/srv/workout/static:ro   # Caddy sirve los estáticos de Django
       - workout_media:/srv/workout/media:ro      # y el media
     networks: [edge]
-    depends_on: [gastos, workout-api, workout-admin]
+    depends_on: [auth, gastos, workout-api, workout-admin]
 
   # ============================================================
-  # gastos — FastAPI + SQLite (gastos.$DOMAIN)
+  # nexus-auth — SSO centralizado (auth.$DOMAIN + forward-auth)
+  # ============================================================
+  auth:
+    build: ../nexus-auth
+    container_name: nexus-auth
+    restart: unless-stopped
+    environment:
+      NEXUS_COOKIE_DOMAIN: ".${DOMAIN}"          # cookie compartida entre subdominios
+      NEXUS_COOKIE_SECURE: "1"
+      NEXUS_PUBLIC_URL: "https://auth.${DOMAIN}"
+      NEXUS_ADMIN_USER: ${NEXUS_ADMIN_USER:-admin}
+      NEXUS_ADMIN_PASSWORD: ${NEXUS_ADMIN_PASSWORD:?define NEXUS_ADMIN_PASSWORD en .env}
+    volumes:
+      - auth_data:/data
+    networks: [edge]
+
+  # ============================================================
+  # gastos — FastAPI + SQLite (gastos.$DOMAIN); el acceso lo controla el SSO
   # ============================================================
   gastos:
     build: ../gastos-python
     container_name: nexus-gastos
     restart: unless-stopped
     environment:
-      GASTOS_PASSWORD: ${GASTOS_PASSWORD:?define GASTOS_PASSWORD en .env}
+      # sin GASTOS_PASSWORD: el login lo pone el SSO en el borde (forward-auth)
       GASTOS_CRON_TOKEN: ${GASTOS_CRON_TOKEN:-}
-      GASTOS_COOKIE_SECURE: "1"   # detrás de HTTPS
     volumes:
       - gastos_data:/data
     networks: [edge]
