@@ -6,6 +6,9 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+  # las apps (gastos/workout/auth) disparan esto al hacer push a su main
+  repository_dispatch:
+    types: [app-updated]
 
 concurrency:
   group: deploy
