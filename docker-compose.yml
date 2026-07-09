@@ -1,0 +1,141 @@
+# Nexus — despliegue conjunto de gastos-python y python-microworkout en un host.
+# Requiere que los tres repos estén clonados uno al lado del otro:
+#   nexus-infra/  gastos-python/  python-microworkout/
+# Uso:  cp .env.example .env  (rellénalo)  &&  docker compose up -d --build
+name: nexus
+
+networks:
+  edge:        # Caddy <-> apps
+  workout:     # red interna de microworkout (db <-> api/admin)
+
+volumes:
+  caddy_data:
+  caddy_config:
+  gastos_data:
+  workout_pgdata:
+  workout_media:
+  workout_static:
+  workout_backups:
+
+services:
+  # ============================================================
+  # Caddy — proxy de borde: TLS automático + enrutado por subdominio
+  # ============================================================
+  caddy:
+    image: caddy:2
+    container_name: nexus-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?define DOMAIN en .env}
+      ACME_EMAIL: ${ACME_EMAIL:?define ACME_EMAIL en .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - workout_static:/srv/workout/static:ro   # Caddy sirve los estáticos de Django
+      - workout_media:/srv/workout/media:ro      # y el media
+    networks: [edge]
+    depends_on: [gastos, workout-api, workout-admin]
+
+  # ============================================================
+  # gastos — FastAPI + SQLite (gastos.$DOMAIN)
+  # ============================================================
+  gastos:
+    build: ../gastos-python
+    container_name: nexus-gastos
+    restart: unless-stopped
+    environment:
+      GASTOS_PASSWORD: ${GASTOS_PASSWORD:?define GASTOS_PASSWORD en .env}
+      GASTOS_CRON_TOKEN: ${GASTOS_CRON_TOKEN:-}
+      GASTOS_COOKIE_SECURE: "1"   # detrás de HTTPS
+    volumes:
+      - gastos_data:/data
+    networks: [edge]
+
+  # ============================================================
+  # microworkout — Postgres/PostGIS
+  # ============================================================
+  workout-db:
+    image: postgis/postgis:16-3.4
+    container_name: nexus-workout-db
+    restart: always
+    env_file: ${WORKOUT_ENV:-../python-microworkout/.env}
+    volumes:
+      - workout_pgdata:/var/lib/postgresql/data
+    networks:
+      workout:
+        aliases: [db]             # la app resuelve POSTGRES_HOST=db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ============================================================
+  # microworkout — API (FastAPI/ASGI) → workout.$DOMAIN (resto de rutas)
+  # ============================================================
+  workout-api:
+    build:
+      context: ../python-microworkout
+      dockerfile: .docker/app/Dockerfile
+      target: production
+    container_name: nexus-workout-api
+    restart: always
+    command: "uvicorn config.asgi:application --host 0.0.0.0 --port 8000 --workers ${WORKERS:-2} --proxy-headers --forwarded-allow-ips=*"
+    env_file: ${WORKOUT_ENV:-../python-microworkout/.env}
+    environment:
+      SERVICE_NAME: api
+      ENVIRONMENT: production
+      POSTGRES_HOST: db          # fuerza el host de BD al alias de red
+    volumes:
+      - workout_media:/code/media
+    depends_on:
+      workout-db: { condition: service_healthy }
+    networks: [edge, workout]
+
+  # ============================================================
+  # microworkout — Admin (Django/WSGI) → /admin y /o de workout.$DOMAIN
+  # ============================================================
+  workout-admin:
+    build:
+      context: ../python-microworkout
+      dockerfile: .docker/app/Dockerfile
+      target: production
+    container_name: nexus-workout-admin
+    restart: always
+    command: "gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --max-requests 1000 --max-requests-jitter 50"
+    env_file: ${WORKOUT_ENV:-../python-microworkout/.env}
+    environment:
+      SERVICE_NAME: admin
+      ENVIRONMENT: production
+      POSTGRES_HOST: db
+    volumes:
+      - workout_media:/code/media
+      - workout_static:/code/static
+    depends_on:
+      workout-db: { condition: service_healthy }
+    networks: [edge, workout]
+
+  # ============================================================
+  # microworkout — copia diaria de Postgres (retención 7 días)
+  # ============================================================
+  workout-db-backup:
+    image: postgres:16-alpine
+    container_name: nexus-workout-db-backup
+    restart: unless-stopped
+    env_file: ${WORKOUT_ENV:-../python-microworkout/.env}
+    volumes:
+      - workout_backups:/backups
+    entrypoint: >
+      sh -c 'while true; do
+        F="/backups/$$(date -u +%Y%m%d-%H%M%S).sql.gz";
+        PGPASSWORD="$$POSTGRES_PASSWORD" pg_dump -h db -U "$$POSTGRES_USER" "$$POSTGRES_DB" | gzip > "$$F" || echo "[backup] FALLO";
+        find /backups -name "*.sql.gz" -mtime +7 -delete;
+        sleep 86400; done'
+    depends_on:
+      workout-db: { condition: service_healthy }
+    networks: [workout]

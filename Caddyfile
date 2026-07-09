@@ -1,0 +1,36 @@
+# TLS automático (Let's Encrypt) + enrutado por subdominio.
+# Los dominios gastos.$DOMAIN y workout.$DOMAIN deben apuntar (A/AAAA) a este host.
+{
+	email {$ACME_EMAIL}
+}
+
+# ---- gastos ----
+gastos.{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy gastos:8000
+}
+
+# ---- microworkout ----
+# Mismo enrutado que su nginx: /admin y /o -> Django; /static y /media -> ficheros;
+# el resto (/, /api, /health, /docs…) -> FastAPI.
+workout.{$DOMAIN} {
+	encode zstd gzip
+
+	handle_path /static/* {
+		root * /srv/workout/static
+		file_server
+	}
+	handle_path /media/* {
+		root * /srv/workout/media
+		file_server
+	}
+	handle /admin/* {
+		reverse_proxy workout-admin:8000
+	}
+	handle /o/* {
+		reverse_proxy workout-admin:8000
+	}
+	handle {
+		reverse_proxy workout-api:8000
+	}
+}
