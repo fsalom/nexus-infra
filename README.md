@@ -94,10 +94,12 @@ Preparar el servidor **una vez**:
 - **Caddy sustituye al nginx de microworkout** como borde único: hace TLS y enruta
   igual que aquél (`/admin` y `/o` → Django, `/static` y `/media` → ficheros del volumen,
   el resto → FastAPI). El nginx del repo de microworkout no se usa aquí.
-- **Datos persistentes** (volúmenes): `gastos_data`, `workout_pgdata`, `workout_media`,
-  `workout_static`, `workout_backups` y los certificados en `caddy_data`.
-- **`POSTGRES_HOST`** se fuerza a `db` (alias de red de `workout-db`), así el `.env` de
-  microworkout funciona sin cambios.
+- **Postgres compartido**: un único servicio `db` (PostGIS) con **3 bases de datos** —
+  `microworkout`, `gastos` y `auth` (las dos últimas las crea `deploy/initdb/99-extra-dbs.sql`
+  al inicializar). gastos y auth conectan por `DATABASE_URL` (`…@db:5432/gastos|auth`) con el
+  usuario/clave de `POSTGRES_USER`/`POSTGRES_PASSWORD`; microworkout usa la BBDD `microworkout`.
+- **Datos persistentes** (volúmenes): `pg_data` (las 3 BBDD), `pg_backups` (`pg_dumpall` diario),
+  `workout_media`, `workout_static` y los certificados en `caddy_data`.
 - **Cron de gastos** (precios + snapshot + copia): en el `crontab` del host,
   ```
   0 7 * * *  curl -fsS -X POST -H "X-Cron-Token: TU_TOKEN" https://gastos.DOMINIO/api/cron/daily

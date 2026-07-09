@@ -1,26 +1,23 @@
-# Nexus — despliegue conjunto de gastos-python y python-microworkout en un host.
-# Requiere que los tres repos estén clonados uno al lado del otro:
-#   nexus-infra/  gastos-python/  python-microworkout/
-# Uso:  cp .env.example .env  (rellénalo)  &&  docker compose up -d --build
+# Nexus — despliegue conjunto de gastos, microworkout y el SSO nexus-auth en un host,
+# con un Postgres COMPARTIDO (3 BBDD: microworkout, gastos, auth) y Caddy de borde.
+# Requiere los repos clonados juntos: nexus-infra/ gastos-python/ python-microworkout/ nexus-auth/
 name: nexus
 
 networks:
   edge:        # Caddy <-> apps
-  workout:     # red interna de microworkout (db <-> api/admin)
+  data:        # Postgres <-> apps
 
 volumes:
   caddy_data:
   caddy_config:
-  auth_data:
-  gastos_data:
-  workout_pgdata:
+  pg_data:
+  pg_backups:
   workout_media:
   workout_static:
-  workout_backups:
 
 services:
   # ============================================================
-  # Caddy — proxy de borde: TLS automático + enrutado por subdominio
+  # Caddy — proxy de borde: TLS automático + subdominios + SSO (forward-auth)
   # ============================================================
   caddy:
     image: caddy:2
@@ -36,64 +33,86 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
-      - workout_static:/srv/workout/static:ro   # Caddy sirve los estáticos de Django
-      - workout_media:/srv/workout/media:ro      # y el media
+      - workout_static:/srv/workout/static:ro
+      - workout_media:/srv/workout/media:ro
     networks: [edge]
     depends_on: [auth, gastos, workout-api, workout-admin]
 
   # ============================================================
-  # nexus-auth — SSO centralizado (auth.$DOMAIN + forward-auth)
+  # PostgreSQL/PostGIS compartido (BBDD: microworkout, gastos, auth)
+  # ============================================================
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: nexus-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?define POSTGRES_USER en .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: microworkout
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./deploy/initdb/99-extra-dbs.sql:/docker-entrypoint-initdb.d/99-extra-dbs.sql:ro
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  db-backup:
+    image: postgres:16-alpine
+    container_name: nexus-db-backup
+    restart: unless-stopped
+    environment:
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pg_backups:/backups
+    entrypoint: >
+      sh -c 'while true; do
+        F="/backups/$$(date -u +%Y%m%d-%H%M%S).sql.gz";
+        pg_dumpall -h db | gzip > "$$F" || echo "[backup] FALLO";
+        find /backups -name "*.sql.gz" -mtime +7 -delete;
+        sleep 86400; done'
+    depends_on:
+      db: { condition: service_healthy }
+    networks: [data]
+
+  # ============================================================
+  # nexus-auth — SSO (auth.$DOMAIN) — BBDD 'auth'
   # ============================================================
   auth:
     build: ../nexus-auth
     container_name: nexus-auth
     restart: unless-stopped
     environment:
-      NEXUS_COOKIE_DOMAIN: ".${DOMAIN}"          # cookie compartida entre subdominios
+      DATABASE_URL: "postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/auth"
+      NEXUS_COOKIE_DOMAIN: ".${DOMAIN}"
       NEXUS_COOKIE_SECURE: "1"
       NEXUS_PUBLIC_URL: "https://auth.${DOMAIN}"
       NEXUS_ADMIN_USER: ${NEXUS_ADMIN_USER:-admin}
       NEXUS_ADMIN_PASSWORD: ${NEXUS_ADMIN_PASSWORD:?define NEXUS_ADMIN_PASSWORD en .env}
-    volumes:
-      - auth_data:/data
-    networks: [edge]
+    depends_on:
+      db: { condition: service_healthy }
+    networks: [edge, data]
 
   # ============================================================
-  # gastos — FastAPI + SQLite (gastos.$DOMAIN); el acceso lo controla el SSO
+  # gastos — FastAPI (gastos.$DOMAIN) — BBDD 'gastos'; acceso vía SSO
   # ============================================================
   gastos:
     build: ../gastos-python
     container_name: nexus-gastos
     restart: unless-stopped
     environment:
-      # sin GASTOS_PASSWORD: el login lo pone el SSO en el borde (forward-auth)
+      DATABASE_URL: "postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/gastos"
       GASTOS_CRON_TOKEN: ${GASTOS_CRON_TOKEN:-}
-    volumes:
-      - gastos_data:/data
-    networks: [edge]
+    depends_on:
+      db: { condition: service_healthy }
+    networks: [edge, data]
 
   # ============================================================
-  # microworkout — Postgres/PostGIS
-  # ============================================================
-  workout-db:
-    image: postgis/postgis:16-3.4
-    container_name: nexus-workout-db
-    restart: always
-    env_file: ${WORKOUT_ENV:-../python-microworkout/.env}
-    volumes:
-      - workout_pgdata:/var/lib/postgresql/data
-    networks:
-      workout:
-        aliases: [db]             # la app resuelve POSTGRES_HOST=db
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  # ============================================================
-  # microworkout — API (FastAPI/ASGI) → workout.$DOMAIN (resto de rutas)
+  # microworkout — API (FastAPI/ASGI) — BBDD 'microworkout'
   # ============================================================
   workout-api:
     build:
@@ -107,15 +126,19 @@ services:
     environment:
       SERVICE_NAME: api
       ENVIRONMENT: production
-      POSTGRES_HOST: db          # fuerza el host de BD al alias de red
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: microworkout
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - workout_media:/code/media
     depends_on:
-      workout-db: { condition: service_healthy }
-    networks: [edge, workout]
+      db: { condition: service_healthy }
+    networks: [edge, data]
 
   # ============================================================
-  # microworkout — Admin (Django/WSGI) → /admin y /o de workout.$DOMAIN
+  # microworkout — Admin (Django/WSGI) — /admin y /o
   # ============================================================
   workout-admin:
     build:
@@ -130,29 +153,13 @@ services:
       SERVICE_NAME: admin
       ENVIRONMENT: production
       POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: microworkout
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - workout_media:/code/media
       - workout_static:/code/static
     depends_on:
-      workout-db: { condition: service_healthy }
-    networks: [edge, workout]
-
-  # ============================================================
-  # microworkout — copia diaria de Postgres (retención 7 días)
-  # ============================================================
-  workout-db-backup:
-    image: postgres:16-alpine
-    container_name: nexus-workout-db-backup
-    restart: unless-stopped
-    env_file: ${WORKOUT_ENV:-../python-microworkout/.env}
-    volumes:
-      - workout_backups:/backups
-    entrypoint: >
-      sh -c 'while true; do
-        F="/backups/$$(date -u +%Y%m%d-%H%M%S).sql.gz";
-        PGPASSWORD="$$POSTGRES_PASSWORD" pg_dump -h db -U "$$POSTGRES_USER" "$$POSTGRES_DB" | gzip > "$$F" || echo "[backup] FALLO";
-        find /backups -name "*.sql.gz" -mtime +7 -delete;
-        sleep 86400; done'
-    depends_on:
-      workout-db: { condition: service_healthy }
-    networks: [workout]
+      db: { condition: service_healthy }
+    networks: [edge, data]
