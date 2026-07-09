@@ -53,6 +53,29 @@ Listo: `https://gastos.DOMINIO` y `https://workout.DOMINIO` (Caddy saca los cert
 La primera vez te pedirá login en `auth.DOMINIO`; entra con `NEXUS_ADMIN_USER`/`NEXUS_ADMIN_PASSWORD`
 y en `https://auth.DOMINIO/admin` das de alta usuarios, grupos y qué app puede usar cada uno.
 
+## Despliegue automático (GitHub Actions)
+
+`.github/workflows/deploy.yml` despliega por SSH (manual desde **Actions → deploy → Run workflow**,
+o al hacer **push a main**): entra al servidor, actualiza los 4 repos en `~/nexus` y hace
+`docker compose up -d --build` (más `migrate`/`collectstatic` de microworkout). La lógica está en
+`deploy/deploy.sh`, reutilizable a mano en el servidor.
+
+Secrets del repo (*Settings → Secrets and variables → Actions*):
+
+| Secret | ¿Necesario? | Por defecto |
+|---|---|---|
+| `SSH_PRIVATE_KEY` | **sí** | — (clave privada con acceso al servidor) |
+| `SSH_HOST` | no | `161.35.215.164` |
+| `SSH_USER` | no | `root` |
+| `SSH_PORT` | no | `22` |
+
+Preparar el servidor **una vez**:
+1. Docker y Docker Compose instalados; tu clave **pública** en `~/.ssh/authorized_keys`.
+2. Los repos se clonan solos en `~/nexus` (si son **privados**, edita `GIT_BASE` en `deploy/deploy.sh`
+   para usar un token, p. ej. `https://TOKEN@github.com/fsalom`).
+3. Crea los `.env` (no van en git): `~/nexus/nexus-infra/.env` y `~/nexus/python-microworkout/.env`.
+4. DNS de `auth`/`gastos`/`workout.DOMINIO` → `161.35.215.164`.
+
 ## Notas
 
 - **Login único (SSO)**: `nexus-auth` centraliza el acceso. Caddy protege gastos y workout

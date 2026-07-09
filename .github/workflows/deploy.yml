@@ -1,0 +1,35 @@
+name: deploy
+
+# Despliega en el servidor por SSH: actualiza los repos y hace docker compose up.
+# Manual (Actions -> deploy -> Run workflow) o al hacer push a main.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST || '161.35.215.164' }}
+          username: ${{ secrets.SSH_USER || 'root' }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          script: |
+            set -e
+            BASE="${NEXUS_DIR:-$HOME/nexus}"
+            # asegura que nexus-infra está presente, luego delega en su deploy.sh
+            if [ -d "$BASE/nexus-infra/.git" ]; then
+              git -C "$BASE/nexus-infra" pull --ff-only
+            else
+              mkdir -p "$BASE"
+              git clone https://github.com/fsalom/nexus-infra.git "$BASE/nexus-infra"
+            fi
+            bash "$BASE/nexus-infra/deploy/deploy.sh"
