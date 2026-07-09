@@ -33,8 +33,10 @@ write_env "$BASE/python-microworkout/.env" "${MICROWORKOUT_VARS:-}" "${MICROWORK
 cd "$BASE/nexus-infra"
 docker compose up -d --build
 
-# microworkout: migraciones y estáticos (idempotente)
+# microworkout: migraciones y estáticos (idempotente).
+# collectstatic va como root: el volumen workout_static (vacío) es de root y el
+# usuario de la app no puede escribir; los ficheros luego solo se leen (Caddy los sirve).
 docker compose run --rm workout-admin python manage.py migrate --noinput || true
-docker compose run --rm workout-admin python manage.py collectstatic --noinput || true
+docker compose run --rm --user root workout-admin python manage.py collectstatic --noinput || true
 
 docker compose ps
