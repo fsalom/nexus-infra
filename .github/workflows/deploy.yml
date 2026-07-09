@@ -18,15 +18,22 @@ jobs:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}            # token read-only para repos privados
-          INFRA_ENV: ${{ secrets.INFRA_ENV }}          # contenido completo de nexus-infra/.env
-          MICROWORKOUT_ENV: ${{ secrets.MICROWORKOUT_ENV }}  # contenido completo de python-microworkout/.env
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}                          # token read-only para repos privados
+          # config no sensible (editable en la UI: Settings -> Variables)
+          INFRA_VARS: ${{ vars.INFRA_VARS }}
+          MICROWORKOUT_VARS: ${{ vars.MICROWORKOUT_VARS }}
+          # secretos (contraseñas, claves)
+          INFRA_SECRETS: ${{ secrets.INFRA_SECRETS }}
+          MICROWORKOUT_SECRETS: ${{ secrets.MICROWORKOUT_SECRETS }}
+          # compatibilidad con el modo anterior (blob único en un secret)
+          INFRA_ENV: ${{ secrets.INFRA_ENV }}
+          MICROWORKOUT_ENV: ${{ secrets.MICROWORKOUT_ENV }}
         with:
           host: ${{ secrets.SSH_HOST || '161.35.215.164' }}
           username: ${{ secrets.SSH_USER || 'root' }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || '22' }}
-          envs: GH_TOKEN,INFRA_ENV,MICROWORKOUT_ENV
+          envs: GH_TOKEN,INFRA_VARS,MICROWORKOUT_VARS,INFRA_SECRETS,MICROWORKOUT_SECRETS,INFRA_ENV,MICROWORKOUT_ENV
           script: |
             set -e
             # con token -> repos privados; sin token -> públicos

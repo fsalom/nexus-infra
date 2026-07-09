@@ -60,29 +60,36 @@ o al hacer **push a main**): entra al servidor, actualiza los 4 repos en `~/nexu
 `docker compose up -d --build` (más `migrate`/`collectstatic` de microworkout). La lógica está en
 `deploy/deploy.sh`, reutilizable a mano en el servidor.
 
-Secrets del repo (*Settings → Secrets and variables → Actions*):
+La config se guarda en *Settings → Secrets and variables → Actions*, repartida entre
+**Variables** (texto plano, **editables** en la UI → lo no sensible) y **Secrets**
+(cifrados, solo escritura → contraseñas y claves). La pipeline junta ambos para crear cada `.env`.
+
+**Secrets:**
 
 | Secret | ¿Necesario? | Por defecto |
 |---|---|---|
 | `SSH_PRIVATE_KEY` | **sí** | — (clave privada con acceso al servidor) |
-| `SSH_HOST` | no | `161.35.215.164` |
-| `SSH_USER` | no | `root` |
-| `SSH_PORT` | no | `22` |
-| `GH_TOKEN` | repos privados | — (PAT *fine-grained* con `Contents: read` a los 4 repos) |
-| `INFRA_ENV` | recomendado | contenido **completo** de `nexus-infra/.env` |
-| `MICROWORKOUT_ENV` | recomendado | contenido **completo** de `python-microworkout/.env` |
+| `SSH_HOST` / `SSH_USER` / `SSH_PORT` | no | `161.35.215.164` / `root` / `22` |
+| `GH_TOKEN` | repos privados | — (PAT *fine-grained*, `Contents: read`, los 4 repos) |
+| `INFRA_SECRETS` | **sí** | líneas sensibles de `nexus-infra/.env` (`POSTGRES_PASSWORD`, `NEXUS_ADMIN_PASSWORD`, `GASTOS_CRON_TOKEN`) |
+| `MICROWORKOUT_SECRETS` | **sí** | líneas sensibles de microworkout (`SECRET_KEY`, y AWS/Firebase si usas) |
 
-Con `INFRA_ENV`/`MICROWORKOUT_ENV` puestos, la pipeline **crea los `.env` en el servidor** y el
-despliegue es 100% desde GitHub. Si no los pones, deja los `.env` creados a mano en el servidor
-(la pipeline los respeta).
+**Variables** (editables sin repegar):
+
+| Variable | Contenido |
+|---|---|
+| `INFRA_VARS` | `DOMAIN`, `ACME_EMAIL`, `POSTGRES_USER`, `NEXUS_ADMIN_USER`, `WORKERS` |
+| `MICROWORKOUT_VARS` | `DEBUG`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `SECURE_PROXY_SSL_HEADER`, `DB_ENGINE`, `USE_AI`, `USE_PUSH_NOTIFICATIONS` |
+
+> Cada `.env` del servidor = `*_VARS` + `*_SECRETS`. Así retocas config (p. ej. `ALLOWED_HOSTS`)
+> editando la Variable en la UI, sin tocar los secretos. (Compat: si defines los secrets
+> `INFRA_ENV`/`MICROWORKOUT_ENV` con el `.env` completo, también funciona.)
 
 Preparar el servidor **una vez**:
-1. Docker y Docker Compose instalados (`curl -fsSL https://get.docker.com | sh`); tu clave
-   **pública** en `~/.ssh/authorized_keys`.
-2. Nada más: los repos se clonan solos en `~/nexus` (con `GH_TOKEN` si son privados) y los
-   `.env` se materializan desde los secrets.
-3. Crea los `.env` (no van en git): `~/nexus/nexus-infra/.env` y `~/nexus/python-microworkout/.env`.
-4. DNS de `auth`/`gastos`/`workout.DOMINIO` → `161.35.215.164`.
+1. Docker y Docker Compose (`curl -fsSL https://get.docker.com | sh`); tu clave **pública** en `~/.ssh/authorized_keys`.
+2. Nada más: los repos se clonan en `~/nexus` (con `GH_TOKEN` si son privados) y los `.env` se
+   materializan desde Variables + Secrets.
+3. DNS de `auth`/`gastos`/`workout.DOMINIO` → `161.35.215.164`.
 
 ## Notas
 

@@ -16,16 +16,19 @@ for r in $REPOS; do
   fi
 done
 
-# .env desde los secrets (si la pipeline los pasa por entorno); si no, se usa
-# el .env que ya exista en el servidor (creado a mano).
-if [ -n "${INFRA_ENV:-}" ]; then
-  printf '%s\n' "$INFRA_ENV" > "$BASE/nexus-infra/.env"
-  echo "== escrito nexus-infra/.env desde secret =="
-fi
-if [ -n "${MICROWORKOUT_ENV:-}" ]; then
-  printf '%s\n' "$MICROWORKOUT_ENV" > "$BASE/python-microworkout/.env"
-  echo "== escrito python-microworkout/.env desde secret =="
-fi
+# Materializa cada .env juntando la parte no sensible (Variables, editables en
+# la UI de GitHub) + la parte sensible (Secrets). Compat: si se pasa el blob
+# antiguo (INFRA_ENV/MICROWORKOUT_ENV) se usa; si no hay nada, se respeta el
+# .env que ya exista en el servidor.
+write_env() {  # $1=fichero  $2=vars  $3=secrets  $4=blob_legacy
+  if [ -n "$(printf '%s' "${2}${3}" | tr -d '[:space:]')" ]; then
+    printf '%s\n%s\n' "$2" "$3" > "$1"; echo "== escrito $1 (variables + secrets) =="
+  elif [ -n "$(printf '%s' "$4" | tr -d '[:space:]')" ]; then
+    printf '%s\n' "$4" > "$1"; echo "== escrito $1 (blob) =="
+  fi
+}
+write_env "$BASE/nexus-infra/.env"        "${INFRA_VARS:-}"       "${INFRA_SECRETS:-}"       "${INFRA_ENV:-}"
+write_env "$BASE/python-microworkout/.env" "${MICROWORKOUT_VARS:-}" "${MICROWORKOUT_SECRETS:-}" "${MICROWORKOUT_ENV:-}"
 
 cd "$BASE/nexus-infra"
 docker compose up -d --build
