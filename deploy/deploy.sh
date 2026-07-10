@@ -42,5 +42,7 @@ docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapte
 # usuario de la app no puede escribir; los ficheros luego solo se leen (Caddy los sirve).
 docker compose run --rm workout-admin python manage.py migrate --noinput || true
 docker compose run --rm --user root workout-admin python manage.py collectstatic --noinput || true
+# la Application 'API' de OAuth2 debe existir para emitir tokens (login social/password); idempotente
+docker compose run --rm workout-admin python manage.py setup_oauth_application || true
 
 docker compose ps
