@@ -33,9 +33,10 @@ write_env "$BASE/python-microworkout/.env" "${MICROWORKOUT_VARS:-}" "${MICROWORK
 cd "$BASE/nexus-infra"
 docker compose up -d --build
 
-# el Caddyfile va bind-mounted: compose no ve sus cambios, así que se recarga
-docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile 2>/dev/null \
-  || docker compose restart caddy || true
+# El Caddyfile va bind-mounted como FICHERO: git lo reemplaza (nuevo inodo) y el
+# contenedor seguiría viendo el fichero viejo, así que `caddy reload` recargaría lo
+# antiguo. Recrear el contenedor re-resuelve el mount al inodo actual del host.
+docker compose up -d --force-recreate caddy
 
 # microworkout: migraciones y estáticos (idempotente).
 # collectstatic va como root: el volumen workout_static (vacío) es de root y el
