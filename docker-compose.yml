@@ -107,6 +107,14 @@ services:
     environment:
       DATABASE_URL: "postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/gastos"
       GASTOS_CRON_TOKEN: ${GASTOS_CRON_TOKEN:-}
+      # IA opcional (cualquier endpoint /v1/chat/completions). Vacío = desactivada.
+      GASTOS_AI_BASE_URL: ${GASTOS_AI_BASE_URL:-}
+      GASTOS_AI_MODEL: ${GASTOS_AI_MODEL:-}
+      GASTOS_AI_API_KEY: ${GASTOS_AI_API_KEY:-}
+      # Interruptor APARTE para el Asistente: con las tres de arriba solo se activa la
+      # sugerencia de categorías (envía comercio y concepto). Con esta a 1 se activa
+      # además el chat, que sí envía importes agregados.
+      GASTOS_AI_PLANNER: ${GASTOS_AI_PLANNER:-}
     depends_on:
       db: { condition: service_healthy }
     networks: [edge, data]
