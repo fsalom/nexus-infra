@@ -30,6 +30,20 @@ write_env() {  # $1=fichero  $2=vars  $3=secrets  $4=blob_legacy
 write_env "$BASE/nexus-infra/.env"        "${INFRA_VARS:-}"       "${INFRA_SECRETS:-}"       "${INFRA_ENV:-}"
 write_env "$BASE/python-microworkout/.env" "${MICROWORKOUT_VARS:-}" "${MICROWORKOUT_SECRETS:-}" "${MICROWORKOUT_ENV:-}"
 
+# Secretos que llegan por su PROPIO nombre, no dentro del blob, y se añaden al .env ya
+# materializado. Sirve para los que conviene rotar desde la UI de GitHub: INFRA_SECRETS
+# no se puede leer (ni por API ni en la web), así que añadirle una línea obliga a
+# reescribir a ciegas todo el bloque de contraseñas, y ahí es fácil perder una.
+upsert_env() {  # $1=fichero  $2=clave  $3=valor  (vacío = no toca nada)
+  [ -n "${3:-}" ] || return 0
+  touch "$1"
+  grep -v "^${2}=" "$1" > "$1.tmp" || true      # quita la anterior si la hubiera
+  printf '%s=%s\n' "$2" "$3" >> "$1.tmp"
+  mv "$1.tmp" "$1"
+  echo "== $2 añadida a $1 =="                   # el valor nunca se imprime
+}
+upsert_env "$BASE/nexus-infra/.env" GASTOS_AI_API_KEY "${GASTOS_AI_API_KEY:-}"
+
 cd "$BASE/nexus-infra"
 docker compose up -d --build
 
