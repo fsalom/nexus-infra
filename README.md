@@ -73,13 +73,31 @@ La config se guarda en *Settings → Secrets and variables → Actions*, reparti
 | `GH_TOKEN` | repos privados | — (PAT *fine-grained*, `Contents: read`, los 4 repos) |
 | `INFRA_SECRETS` | **sí** | líneas sensibles de `nexus-infra/.env` (`POSTGRES_PASSWORD`, `NEXUS_ADMIN_PASSWORD`, `GASTOS_CRON_TOKEN`) |
 | `MICROWORKOUT_SECRETS` | **sí** | líneas sensibles de microworkout (`SECRET_KEY`, y AWS/Firebase si usas) |
+| `GASTOS_AI_API_KEY` | IA de gastos | se añade a `nexus-infra/.env` sin tocar el blob |
+| `WORKOUT_AI_API_KEY` | coach IA de workout | se añade a `python-microworkout/.env` como `LLM_API_KEY` (nombre neutro: el proveedor lo decide `LLM_PROVIDER`) |
 
 **Variables** (editables sin repegar):
 
 | Variable | Contenido |
 |---|---|
 | `INFRA_VARS` | `DOMAIN`, `ACME_EMAIL`, `POSTGRES_USER`, `NEXUS_ADMIN_USER`, `WORKERS` |
-| `MICROWORKOUT_VARS` | `DEBUG`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `SECURE_PROXY_SSL_HEADER`, `DB_ENGINE`, `USE_AI`, `USE_PUSH_NOTIFICATIONS` |
+| `MICROWORKOUT_VARS` | `DEBUG`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `SECURE_PROXY_SSL_HEADER`, `DB_ENGINE`, `USE_AI`, `USE_PUSH_NOTIFICATIONS`, `GOOGLE_CLIENT_IDS`, `LLM_PROVIDER`, `LLM_MODEL`, `LLM_BASE_URL` |
+
+> **`GOOGLE_CLIENT_IDS` es obligatoria** para el login con Google: el backend valida
+> el `aud` del `id_token` contra esa lista y **falla en cerrado** (403 `Google login
+> is not configured on the server.`). Es el client ID que la app publica en su
+> `Info.plist`, no un secreto. Varios separados por coma (iOS, Android, web).
+>
+> **Las cuatro `LLM_*` conviene declararlas desde el principio**, aunque estén
+> vacías: así se ve el juego completo de mandos y cambiar de proveedor es editar la
+> Variable, sin descubrir variables nuevas ni tocar infra. Vacías = defaults del
+> adaptador. `LLM_PROVIDER` nombra el protocolo (`anthropic` | `openai`, este
+> último para cualquier endpoint compatible vía `LLM_BASE_URL`); la clave va aparte
+> en el secret `WORKOUT_AI_API_KEY` porque sí es sensible.
+>
+> Tras cada deploy, el log del contenedor dice qué config quedó:
+> `LLM configurado: adapter=… model=… base_url=… api_key=presente|AUSENTE`
+> (`docker logs nexus-workout-api | grep "LLM configurado"`). La clave nunca se imprime.
 
 > Cada `.env` del servidor = `*_VARS` + `*_SECRETS`. Así retocas config (p. ej. `ALLOWED_HOSTS`)
 > editando la Variable en la UI, sin tocar los secretos. (Compat: si defines los secrets
