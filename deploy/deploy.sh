@@ -43,6 +43,10 @@ upsert_env() {  # $1=fichero  $2=clave  $3=valor  (vacío = no toca nada)
   echo "== $2 añadida a $1 =="                   # el valor nunca se imprime
 }
 upsert_env "$BASE/nexus-infra/.env" GASTOS_AI_API_KEY "${GASTOS_AI_API_KEY:-}"
+# La clave de IA de microworkout va en SU .env (workout-* lo lee con env_file) y con
+# nombre neutro: el proveedor lo decide LLM_PROVIDER en MICROWORKOUT_VARS, no el
+# nombre de la variable.
+upsert_env "$BASE/python-microworkout/.env" LLM_API_KEY "${WORKOUT_AI_API_KEY:-}"
 
 cd "$BASE/nexus-infra"
 docker compose up -d --build

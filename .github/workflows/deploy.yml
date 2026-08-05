@@ -34,12 +34,13 @@ jobs:
           # secretos con nombre propio: se añaden al .env sin tocar el blob (que no se
           # puede leer, así que editarlo obliga a reescribir todas las contraseñas)
           GASTOS_AI_API_KEY: ${{ secrets.GASTOS_AI_API_KEY }}
+          WORKOUT_AI_API_KEY: ${{ secrets.WORKOUT_AI_API_KEY }}
         with:
           host: ${{ secrets.SSH_HOST || '161.35.215.164' }}
           username: ${{ secrets.SSH_USER || 'root' }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || '22' }}
-          envs: GH_TOKEN,INFRA_VARS,MICROWORKOUT_VARS,INFRA_SECRETS,MICROWORKOUT_SECRETS,INFRA_ENV,MICROWORKOUT_ENV,GASTOS_AI_API_KEY
+          envs: GH_TOKEN,INFRA_VARS,MICROWORKOUT_VARS,INFRA_SECRETS,MICROWORKOUT_SECRETS,INFRA_ENV,MICROWORKOUT_ENV,GASTOS_AI_API_KEY,WORKOUT_AI_API_KEY
           script: |
             set -e
             # con token -> repos privados; sin token -> públicos
