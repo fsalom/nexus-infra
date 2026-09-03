@@ -14,6 +14,7 @@ volumes:
   pg_backups:
   workout_media:
   workout_static:
+  workout_web:
 
 services:
   # ============================================================
@@ -35,6 +36,7 @@ services:
       - caddy_config:/config
       - workout_static:/srv/workout/static:ro
       - workout_media:/srv/workout/media:ro
+      - workout_web:/srv/workout/web:ro
     networks: [edge]
     depends_on: [auth, gastos, workout-api, workout-admin]
 
@@ -171,3 +173,19 @@ services:
     depends_on:
       db: { condition: service_healthy }
     networks: [edge, data]
+
+  # ============================================================
+  # microworkout — Web (SPA): compila el bundle y lo publica en el volumen
+  # ============================================================
+  # One-shot: copia dist/ al volumen que Caddy sirve en la raíz de workout.* y
+  # termina. Corre en cada deploy (`up -d --build`); si la web no cambió, el
+  # build sale de caché y la copia es idempotente. El rm+cp deja una ventana de
+  # milisegundos sin index.html durante el deploy: aceptable a esta escala.
+  workout-web:
+    build:
+      context: ../python-microworkout/web
+    container_name: nexus-workout-web
+    restart: "no"
+    command: sh -c "rm -rf /out/* && cp -r /app/dist/. /out/"
+    volumes:
+      - workout_web:/out

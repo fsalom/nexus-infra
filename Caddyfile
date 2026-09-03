@@ -61,8 +61,22 @@ workout.{$DOMAIN} {
 		reverse_proxy workout-admin:8000
 	}
 
-	# API y el resto -> FastAPI, con su propia auth por token: SIN SSO.
-	handle {
+	# API -> FastAPI, con su propia auth por token: SIN SSO.
+	handle /api/* {
 		reverse_proxy workout-api:8000
+	}
+
+	# Rutas del propio FastAPI que viven fuera de /api.
+	@fastapi path /docs /redoc /openapi.json /health
+	handle @fastapi {
+		reverse_proxy workout-api:8000
+	}
+
+	# El resto es la web (SPA): estáticos con fallback a index.html, porque las
+	# rutas (/login, …) son del router del cliente, no ficheros.
+	handle {
+		root * /srv/workout/web
+		try_files {path} /index.html
+		file_server
 	}
 }
