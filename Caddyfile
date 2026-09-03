@@ -62,6 +62,13 @@ workout.{$DOMAIN} {
 	}
 
 	# API -> FastAPI, con su propia auth por token: SIN SSO.
+	#
+	# /v1 es el prefijo REAL en producción (API_PREFIX vacío): es lo que llama la
+	# app iOS instalada, y no se puede mover sin romperla. /api queda también
+	# enrutado por si el prefijo se normaliza algún día.
+	handle /v1/* {
+		reverse_proxy workout-api:8000
+	}
 	handle /api/* {
 		reverse_proxy workout-api:8000
 	}
