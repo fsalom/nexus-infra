@@ -47,6 +47,8 @@ upsert_env "$BASE/nexus-infra/.env" GASTOS_AI_API_KEY "${GASTOS_AI_API_KEY:-}"
 # nombre neutro: el proveedor lo decide LLM_PROVIDER en MICROWORKOUT_VARS, no el
 # nombre de la variable.
 upsert_env "$BASE/python-microworkout/.env" LLM_API_KEY "${WORKOUT_AI_API_KEY:-}"
+# La clave privada VAPID de los avisos web: secreto propio, como la de IA.
+upsert_env "$BASE/python-microworkout/.env" WEBPUSH_VAPID_PRIVATE_KEY "${WORKOUT_VAPID_PRIVATE_KEY:-}"
 
 cd "$BASE/nexus-infra"
 docker compose up -d --build
