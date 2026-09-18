@@ -7,6 +7,7 @@ Despliegue conjunto de [**gastos-python**](https://github.com/fsalom/gastos-pyth
 
 ```
                         ┌──────────── Caddy (80/443, TLS) ────────────┐
+   DOMINIO         ─────┤ (web personal, estática, sin SSO)            ├──> ./web          (ficheros)
    auth.DOMINIO    ─────┤                                              ├──> auth          (SSO: login/portal/admin)
    gastos.DOMINIO  ──▶ forward-auth ──┤ (login único; deja pasar o no) ├──> gastos        (FastAPI + SQLite)
    workout.DOMINIO ──▶ forward-auth ──┤                                ├──> workout-api   (FastAPI/ASGI)
@@ -27,7 +28,7 @@ te manda al login de `auth.DOMINIO`; si la hay, deja pasar. gastos ya no tiene c
   git clone https://github.com/fsalom/python-microworkout.git
   git clone https://github.com/fsalom/nexus-auth.git   # SSO
   ```
-- DNS: `auth.DOMINIO`, `gastos.DOMINIO` y `workout.DOMINIO` con registro **A/AAAA** apuntando al host.
+- DNS: `DOMINIO`, `www.DOMINIO`, `auth.DOMINIO`, `gastos.DOMINIO` y `workout.DOMINIO` con registro **A/AAAA** apuntando al host.
 
 ## Puesta en marcha
 
@@ -107,10 +108,15 @@ Preparar el servidor **una vez**:
 1. Docker y Docker Compose (`curl -fsSL https://get.docker.com | sh`); tu clave **pública** en `~/.ssh/authorized_keys`.
 2. Nada más: los repos se clonan en `~/nexus` (con `GH_TOKEN` si son privados) y los `.env` se
    materializan desde Variables + Secrets.
-3. DNS de `auth`/`gastos`/`workout.DOMINIO` → `161.35.215.164`.
+3. DNS de `DOMINIO`, `www` y `auth`/`gastos`/`workout.DOMINIO` → `161.35.215.164`.
 
 ## Notas
 
+- **Web personal en la raíz** (`https://DOMINIO`): una página estática que vive en `./web`
+  de este repo (HTML, CSS y un script inline; sin build ni contenedor). Caddy la sirve
+  desde el bind-mount `./web:/srv/web` y redirige `www.` a la raíz. Se actualiza con el
+  `git pull` del deploy; al ser un directorio, no sufre el problema del inodo del Caddyfile.
+  La foto va en `web/assets/fernando.jpg` cuando la haya.
 - **Login único (SSO)**: `nexus-auth` centraliza el acceso. Caddy protege gastos y workout
   con `forward_auth` (patrón ext_authz: el proxy pregunta y deja pasar o no; el servicio no
   está en el camino de los datos). La cookie de sesión es del dominio padre (`.DOMINIO`), así

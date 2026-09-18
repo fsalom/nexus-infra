@@ -4,6 +4,20 @@
 	email {$ACME_EMAIL}
 }
 
+# ---- web personal (raíz del dominio) ----
+# Estática, sin SSO: es la carta de presentación pública. Vive en ./web de este
+# repo y va montada como directorio, así que git pull la actualiza sin recrear nada.
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+	root * /srv/web
+	file_server
+	header /assets/* Cache-Control "public, max-age=604800"
+}
+
 # ---- SSO (nexus-auth): login, portal, admin, /verify ----
 auth.{$DOMAIN} {
 	encode zstd gzip

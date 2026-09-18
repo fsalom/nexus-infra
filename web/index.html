@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fernando Salom</title>
+<meta name="description" content="Fernando Salom. Construyo equipos, arquitecturas y hábitos que sobreviven a la tecnología del momento.">
+<link rel="canonical" href="https://fernandosalom.es/">
+<meta property="og:type" content="profile">
+<meta property="og:locale" content="es_ES">
+<meta property="og:url" content="https://fernandosalom.es/">
+<meta property="og:title" content="Fernando Salom">
+<meta property="og:description" content="Ingeniero informático. Construyo equipos, arquitecturas y hábitos que sobreviven a la tecnología del momento.">
+<meta property="og:image" content="https://fernandosalom.es/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,800;1,9..144,600&family=Jost:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="styles.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Fernando Salom",
+  "url": "https://fernandosalom.es/",
+  "jobTitle": "Ingeniero informático",
+  "address": { "@type": "PostalAddress", "addressLocality": "Valencia", "addressCountry": "ES" },
+  "sameAs": ["https://www.linkedin.com/in/fsalom/", "https://github.com/fsalom"]
+}
+</script>
+</head>
+
+<body>
+<canvas id="grafo" aria-hidden="true"></canvas>
+<div class="veil" aria-hidden="true"></div>
+
+<div class="scene">
+  <header class="top">
+    <span>Fernando Salom</span>
+    <span>Valencia, España</span>
+  </header>
+
+  <main class="center">
+    <h1 class="name" aria-label="Fernando Salom">
+      <span class="w"><span style="--i:0">F</span><span style="--i:1">e</span><span style="--i:2">r</span><span style="--i:3">n</span><span style="--i:4">a</span><span style="--i:5">n</span><span style="--i:6">d</span><span style="--i:7">o</span></span>
+      <span class="w"><span style="--i:8">S</span><span style="--i:9">a</span><span style="--i:10">l</span><span style="--i:11">o</span><span style="--i:12">m</span></span>
+    </h1>
+
+    <div class="intro">
+      <p>Ingeniero informático. Mi mejor trabajo es un equipo que ya no me necesita.</p>
+      <p class="kinetic">
+        Construyo
+        <span class="rot" id="rot" aria-live="polite">
+          <span aria-hidden="false">equipos que se explican sin mí.</span>
+          <span aria-hidden="true">arquitecturas que sobreviven al framework de moda.</span>
+          <span aria-hidden="true">hábitos que aguantan el lunes malo.</span>
+          <span aria-hidden="true">procesos que caben en una servilleta.</span>
+          <span aria-hidden="true">criterio para que la IA no decida por ti.</span>
+          <span aria-hidden="true">ideas que se traducen a cualquier lenguaje.</span>
+        </span>
+      </p>
+    </div>
+
+    <nav class="links" aria-label="Enlaces">
+      <a class="pill" data-magnet href="https://github.com/fsalom" rel="me">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <a class="pill" data-magnet href="https://www.linkedin.com/in/fsalom/" rel="me">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M0 1.15C0 .51.53 0 1.18 0h13.64C15.47 0 16 .51 16 1.15v13.7c0 .64-.53 1.15-1.18 1.15H1.18C.53 16 0 15.49 0 14.85V1.15zm4.94 12.24V6.17H2.54v7.22h2.4zM3.74 5.18c.84 0 1.36-.55 1.36-1.25-.02-.71-.52-1.25-1.34-1.25-.82 0-1.36.54-1.36 1.25 0 .7.52 1.25 1.33 1.25h.01zm2.53 8.21h2.4V9.36c0-.22.02-.43.08-.59.17-.43.57-.88 1.23-.88.87 0 1.22.66 1.22 1.63v3.87h2.4V9.25c0-2.22-1.18-3.25-2.76-3.25-1.3 0-1.86.72-2.18 1.21h.02V6.17h-2.4c.03.68 0 7.22 0 7.22z"/></svg>
+        LinkedIn
+      </a>
+    </nav>
+  </main>
+
+  <footer class="bottom">
+    <span>© 2026</span>
+    <span>Valencia</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var quiet = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* 1. Grafo de dependencias: nodos que derivan hacia el centro y se apartan del cursor. */
+  var cv = document.getElementById('grafo'), cx = cv.getContext('2d');
+  var W, H, dpr, nodes = [], N = 72, mouse = { x: -1e4, y: -1e4 };
+
+  function size() {
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function seed() {
+    nodes = [];
+    for (var i = 0; i < N; i++) {
+      nodes.push({
+        x: Math.random() * W, y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4,
+        r: Math.random() < 0.12 ? 3.4 : 1.7,
+        ring: 0.35 + Math.random() * 0.55       /* a qué distancia del centro quiere orbitar */
+      });
+    }
+  }
+  function step() {
+    var c = { x: W / 2, y: H / 2 }, R = Math.min(W, H) * 0.5;
+    nodes.forEach(function (n) {
+      var dx = c.x - n.x, dy = c.y - n.y, d = Math.hypot(dx, dy) || 1;
+      var want = R * n.ring, pull = (d - want) * 0.00035;   /* hacia su órbita */
+      n.vx += dx / d * pull + (-dy / d) * 0.004;             /* y una deriva tangencial lenta */
+      n.vy += dy / d * pull + (dx / d) * 0.004;
+      var mx = n.x - mouse.x, my = n.y - mouse.y, md = Math.hypot(mx, my);
+      if (md < 150) { n.vx += mx / md * (150 - md) * 0.012; n.vy += my / md * (150 - md) * 0.012; }
+      n.vx *= 0.96; n.vy *= 0.96;
+      n.x += n.vx; n.y += n.vy;
+    });
+  }
+  function draw() {
+    cx.clearRect(0, 0, W, H);
+    var link = Math.min(W, H) * 0.16;
+    for (var i = 0; i < N; i++) for (var j = i + 1; j < N; j++) {
+      var a = nodes[i], b = nodes[j], d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (d > link) continue;
+      cx.strokeStyle = 'rgba(200,222,208,' + (0.26 * (1 - d / link)).toFixed(3) + ')';
+      cx.lineWidth = 1;
+      cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke();
+    }
+    nodes.forEach(function (n) {
+      cx.fillStyle = n.r > 2 ? '#d8a95a' : 'rgba(200,222,208,0.8)';
+      cx.beginPath(); cx.arc(n.x, n.y, n.r, 0, Math.PI * 2); cx.fill();
+    });
+  }
+  function loop() { step(); draw(); requestAnimationFrame(loop); }
+
+  size(); seed();
+  addEventListener('resize', function () { size(); seed(); if (quiet) { for (var k = 0; k < 400; k++) step(); draw(); } });
+  addEventListener('pointermove', function (e) { mouse.x = e.clientX; mouse.y = e.clientY; });
+  addEventListener('pointerleave', function () { mouse.x = mouse.y = -1e4; });
+  if (quiet) { for (var k = 0; k < 400; k++) step(); draw(); } else loop();
+
+  /* 2. La palabra que gira. */
+  var rot = document.getElementById('rot');
+  if (rot && !quiet) {
+    var words = Array.prototype.slice.call(rot.children), i = 0;
+    setInterval(function () {
+      words[i].setAttribute('aria-hidden', 'true');
+      i = (i + 1) % words.length;
+      words[i].setAttribute('aria-hidden', 'false');
+    }, 2600);
+  }
+
+  /* 3. Las píldoras se inclinan hacia el cursor. */
+  if (!quiet) document.querySelectorAll('[data-magnet]').forEach(function (el) {
+    el.addEventListener('pointermove', function (e) {
+      var r = el.getBoundingClientRect();
+      var dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+      el.style.transform = 'translate(' + (dx * 0.18).toFixed(1) + 'px,' + (dy * 0.28).toFixed(1) + 'px)';
+    });
+    el.addEventListener('pointerleave', function () { el.style.transform = ''; });
+  });
+})();
+</script>
+</body>
+</html>

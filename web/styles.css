@@ -1,0 +1,179 @@
+/* ==========================================================================
+   fernandosalom.es — "Grafo".
+   Una sola pantalla. Detrás, un grafo de dependencias vivo que fluye hacia
+   el centro; delante, el nombre, dos líneas y dos enlaces.
+   ========================================================================== */
+
+:root {
+  color-scheme: dark;
+  --bg:      #0e2a24;   /* verde bosque */
+  --fg:      #f4eee1;   /* crema */
+  --fg-2:    #a8bfb3;   /* salvia apagado */
+  --gold:    #d8a95a;
+  --gold-2:  #ead2a0;
+  --serif: "Fraunces", Georgia, serif;
+  --sans:  "Jost", ui-sans-serif, system-ui, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 17px;
+  line-height: 1.5;
+  overflow-x: hidden;            /* una pantalla, pero si no cabe, se puede bajar */
+  -webkit-font-smoothing: antialiased;
+}
+
+[hidden] { display: none !important; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; border-radius: 999px; }
+
+/* Grafo ------------------------------------------------------------------- */
+#grafo {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Un velo radial para que el texto siempre gane al grafo */
+.veil {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 55% 60% at 50% 48%, rgba(14, 42, 36, 0.82), rgba(14, 42, 36, 0) 70%);
+}
+
+/* Escena ------------------------------------------------------------------ */
+.scene {
+  position: relative;
+  z-index: 1;
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: clamp(1.25rem, 3vw, 2.5rem);
+}
+
+.top, .bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  color: var(--fg-2);
+}
+.top a, .bottom a { text-decoration: none; }
+.top a:hover, .bottom a:hover { color: var(--fg); }
+
+.center {
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 1.5rem;
+}
+
+/* Nombre: cada letra entra por su cuenta ------------------------------------ */
+.name {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(3.5rem, 12vw, 11rem);
+  font-weight: 800;
+  font-variation-settings: "opsz" 144, "SOFT" 30;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+.name .w { display: block; white-space: nowrap; }   /* cada palabra, entera y en su línea */
+.name .w span { display: inline-block; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .name .w span {
+    opacity: 0;
+    transform: translateY(0.35em) rotate(2deg);
+    animation: rise 0.9s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+    animation-delay: calc(0.12s + var(--i) * 45ms);
+  }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  .intro, .links { opacity: 0; animation: fade 0.8s ease forwards; }
+  .intro { animation-delay: 0.85s; }
+  .links { animation-delay: 1.05s; }
+  @keyframes fade { to { opacity: 1; } }
+}
+
+/* Introducción ------------------------------------------------------------ */
+.intro { display: grid; gap: 0.4rem; color: var(--fg-2); font-size: clamp(1rem, 0.9rem + 0.5vw, 1.25rem); }
+.intro p { margin: 0; }
+.intro .kinetic { color: var(--fg); font-weight: 500; }
+
+/* La palabra que gira */
+.rot {
+  display: inline-grid;
+  vertical-align: baseline;      /* comparte línea base con «Construyo» */
+  text-align: left;
+  color: var(--gold-2);
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.2em;
+}
+.rot span {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(0.35em);
+  transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+.rot span[aria-hidden="false"] { opacity: 1; transform: none; }
+
+/* Enlaces: dos píldoras que se acercan al cursor ----------------------------- */
+.links { display: flex; justify-content: center; gap: 0.9rem; flex-wrap: wrap; margin-top: 0.5rem; }
+
+.pill {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.95rem 1.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(216, 169, 90, 0.45);
+  font-weight: 500;
+  font-size: 0.92rem;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  transition: border-color 0.2s ease, color 0.2s ease, transform 0.25s cubic-bezier(0.2, 0.9, 0.2, 1);
+  will-change: transform;
+}
+.pill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--gold);
+  transform: translateX(-101%);
+  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.2, 1);
+  z-index: -1;
+}
+.pill:hover { border-color: var(--gold); color: #1b1a14; }
+.pill:hover::before { transform: none; }
+.pill svg { width: 18px; height: 18px; fill: currentColor; }
+
+@media (max-width: 640px) {
+  .name { font-size: clamp(3rem, 15vw, 6rem); }
+  /* En estrecho, la frase baja a su propia línea y puede partirse. */
+  .rot { display: grid; text-align: center; margin-top: 0.1em; }
+  .rot span { white-space: normal; }
+  .top, .bottom { font-size: 0.75rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rot span { transition: none; }
+  .pill, .pill::before { transition: none; }
+}

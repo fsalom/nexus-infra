@@ -32,6 +32,7 @@ services:
       ACME_EMAIL: ${ACME_EMAIL:?define ACME_EMAIL en .env}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./web:/srv/web:ro
       - caddy_data:/data
       - caddy_config:/config
       - workout_static:/srv/workout/static:ro
